@@ -36,7 +36,6 @@ struct Wave: Shape {
 }
 
 struct ContentView: View {
-    // Verileri telefonda kalıcı saklar
     @AppStorage("icilenSu") private var icilenSu: Int = 0
     @AppStorage("sonKayitGunu") private var sonKayitGunu: String = ""
     @AppStorage("hatirlaticiAktif") private var hatirlaticiAktif: Bool = false
@@ -44,9 +43,8 @@ struct ContentView: View {
     @State private var waveOffset = Angle(degrees: 0)
     @State private var motivasyonMesaji: String = "Bugün kendine iyi bakmayı unutma 💙"
     
-    let gunlukHedef: Int = 2000 // Günlük 2000 ml (2 Litre) hedef
+    let gunlukHedef: Int = 2000
     
-    // Ekranda değişecek tatlı mesajlar (Burayı istediğin gibi özelleştir)
     let mesajlar = [
         "Harikasın! Cildin ve enerjin sana teşekkür ediyor ✨",
         "Bir bardak daha! Hedefe adım adım yaklaşıyorsun 💧",
@@ -61,14 +59,12 @@ struct ContentView: View {
     
     var body: some View {
         ZStack {
-            // Arka plan yumuşak geçişi
             LinearGradient(gradient: Gradient(colors: [Color.blue.opacity(0.12), Color.cyan.opacity(0.05), Color.white]),
                            startPoint: .topLeading,
                            endPoint: .bottomTrailing)
                 .ignoresSafeArea()
             
             VStack(spacing: 25) {
-                // Üst Başlık
                 VStack(spacing: 6) {
                     Text("Günlük Su Takibin")
                         .font(.system(size: 28, weight: .bold, design: .rounded))
@@ -85,18 +81,15 @@ struct ContentView: View {
                 
                 Spacer()
                 
-                // Dairesel Dalgalı Su Tankı
                 ZStack {
                     Circle()
                         .fill(Color.white)
                         .shadow(color: Color.blue.opacity(0.15), radius: 20, x: 0, y: 10)
                     
-                    // Dalga Katmanı 1 (Arka)
                     Wave(offset: waveOffset + Angle(degrees: 180), percent: dolulukOrani)
                         .fill(Color.cyan.opacity(0.4))
                         .clipShape(Circle())
                     
-                    // Dalga Katmanı 2 (Ön)
                     Wave(offset: waveOffset, percent: dolulukOrani)
                         .fill(
                             LinearGradient(gradient: Gradient(colors: [Color.blue, Color.cyan]),
@@ -105,7 +98,6 @@ struct ContentView: View {
                         )
                         .clipShape(Circle())
                     
-                    // Orta Yazı Göstergesi
                     VStack(spacing: 4) {
                         Text("\(icilenSu) ml")
                             .font(.system(size: 40, weight: .heavy, design: .rounded))
@@ -133,7 +125,6 @@ struct ContentView: View {
                 
                 Spacer()
                 
-                // Bardak Seçenekleri Butonları
                 VStack(spacing: 12) {
                     Text("Ne kadar su içtin?")
                         .font(.footnote)
@@ -148,7 +139,6 @@ struct ContentView: View {
                 }
                 .padding(.horizontal)
                 
-                // Alt Kontrol Barı (Hatırlatıcı & Sıfırlama)
                 HStack(spacing: 20) {
                     Button(action: {
                         hatirlaticilariAyarla()
@@ -189,10 +179,8 @@ struct ContentView: View {
         }
     }
     
-    // Özel Buton Tasarımı
     func suEkleButonu(miktar: Int, etiket: String, ikon: String) -> some View {
         Button(action: {
-            // Titreşim efekti
             let impact = UIImpactFeedbackGenerator(style: .medium)
             impact.impactOccurred()
             
@@ -210,3 +198,63 @@ struct ContentView: View {
                     .foregroundColor(.primary)
                 Text(etiket)
                     .font(.caption2)
+                    .foregroundColor(.secondary)
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 16)
+            .background(Color.white)
+            .cornerRadius(18)
+            .shadow(color: Color.black.opacity(0.05), radius: 8, x: 0, y: 4)
+        }
+    }
+    
+    func gunKontroluYap() {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+        let bugun = formatter.string(from: Date())
+        
+        if sonKayitGunu != bugun {
+            icilenSu = 0
+            sonKayitGunu = bugun
+        }
+    }
+    
+    func hatirlaticilariAyarla() {
+        let center = UNUserNotificationCenter.current()
+        center.requestAuthorization(options: [.alert, .sound, .badge]) { granted, _ in
+            guard granted else { return }
+            
+            center.removeAllPendingNotificationRequests()
+            
+            let bildirimMesajlari = [
+                ("Su Vakti Sevgilim 💧", "Bir bardak su içmeyi unutma, senin için çok önemli ❤️"),
+                ("Küçük Bir Hatırlatma ✨", "Güzelim şu an bir yudum su içmeye ne dersin?"),
+                ("Enerjini Yenile 💙", "Su içme saatin geldi, ihmal etme olur mu?"),
+                ("Canım Sevgilim 🌸", "Hedefine ulaşmak için bir bardak daha su içme zamanı!")
+            ]
+            
+            let saatler = [10, 12, 14, 16, 18, 20, 22]
+            
+            for (index, saat) in saatler.enumerated() {
+                let content = UNMutableNotificationContent()
+                let secilenMesaj = bildirimMesajlari[index % bildirimMesajlari.count]
+                content.title = secilenMesaj.0
+                content.body = secilenMesaj.1
+                content.sound = .default
+                
+                var dateComponents = DateComponents()
+                dateComponents.hour = saat
+                dateComponents.minute = 0
+                
+                let trigger = UNCalendarNotificationTrigger(dateMatching: dateComponents, repeats: true)
+                let request = UNNotificationRequest(identifier: "su_hatirlatici_\(saat)", content: content, trigger: trigger)
+                center.add(request)
+            }
+            
+            DispatchQueue.main.async {
+                hatirlaticiAktif = true
+                motivasyonMesaji = "Harika! Her 2 saatte bir sana hatırlatacağım 🔔"
+            }
+        }
+    }
+}
