@@ -9,6 +9,7 @@ workflows:
           xcodegen generate
       - name: Uygulamayı Derle
         script: |
+          set -e
           xcodebuild -project SuVakti.xcodeproj \
             -scheme SuVakti \
             -sdk iphoneos \
@@ -16,9 +17,10 @@ workflows:
             CODE_SIGN_IDENTITY="" \
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGNING_ALLOWED=NO \
-            archive -archivePath $CM_BUILD_DIR/SuVakti.xcarchive
+            build
+          APP_PATH=$(find ~/Library/Developer/Xcode/DerivedData -name "SuVakti.app" | head -n 1)
           mkdir -p Payload
-          cp -r $CM_BUILD_DIR/SuVakti.xcarchive/Products/Applications/SuVakti.app Payload/
+          cp -r "$APP_PATH" Payload/
           zip -r SuVakti.ipa Payload
     artifacts:
       - SuVakti.ipa
