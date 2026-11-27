@@ -1,0 +1,24 @@
+workflows:
+  ios-workflow:
+    name: iOS IPA Derleme
+    instance_type: mac_mini_m2
+    scripts:
+      - name: Xcode Projesi Oluştur
+        script: |
+          brew install xcodegen
+          xcodegen generate
+      - name: Uygulamayı Derle
+        script: |
+          xcodebuild -project SuVakti.xcodeproj \
+            -scheme SuVakti \
+            -sdk iphoneos \
+            -configuration Release \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO \
+            archive -archivePath $CM_BUILD_DIR/SuVakti.xcarchive
+          mkdir -p Payload
+          cp -r $CM_BUILD_DIR/SuVakti.xcarchive/Products/Applications/SuVakti.app Payload/
+          zip -r SuVakti.ipa Payload
+    artifacts:
+      - SuVakti.ipa
