@@ -7,20 +7,20 @@ workflows:
         script: |
           brew install xcodegen
           xcodegen generate
-      - name: Uygulamayı Derle
+      - name: Uygulamayı Derle ve Paketle
         script: |
           set -e
           xcodebuild -project SuVakti.xcodeproj \
             -scheme SuVakti \
             -sdk iphoneos \
             -configuration Release \
+            -derivedDataPath build \
             CODE_SIGN_IDENTITY="" \
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGNING_ALLOWED=NO \
             build
-          APP_PATH=$(find ~/Library/Developer/Xcode/DerivedData -name "SuVakti.app" | head -n 1)
           mkdir -p Payload
-          cp -r "$APP_PATH" Payload/
-          zip -r SuVakti.ipa Payload
+          cp -R build/Build/Products/Release-iphoneos/SuVakti.app Payload/
+          /usr/bin/zip -r SuVakti.ipa Payload
     artifacts:
       - SuVakti.ipa
